@@ -8,6 +8,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -668,6 +669,66 @@ namespace UnityGLTF
 			gltfWriteOutMarker.End();
 			exportGltfMarker.End();
 		}
+
+		public Dictionary<string, MemoryStream> GetGLTFStreams(string sceneName) {
+            Dictionary<string, MemoryStream> result = new Dictionary<string, MemoryStream>();
+            exportGltfMarker.Begin();
+
+            exportGltfInitMarker.Begin();
+            MemoryStream binStream = new MemoryStream();
+            MemoryStream jsonStream = new MemoryStream();
+            _shouldUseInternalBufferForImages = false;
+            _bufferWriter = new BinaryWriterWithLessAllocations(binStream);
+            TextWriter jsonWriter = new StreamWriter(jsonStream, new UTF8Encoding(false));
+            exportGltfInitMarker.End();
+
+            beforeSceneExportMarker.Begin();
+            _exportOptions.BeforeSceneExport?.Invoke(this, _root);
+            BeforeSceneExport?.Invoke(this, _root);
+            beforeSceneExportMarker.End();
+
+            _root.Scene = ExportScene(sceneName, _rootTransforms);
+
+            // Export skins
+            for (int i = 0; i < _skinnedNodes.Count; ++i) {
+                Transform t = _skinnedNodes[i];
+                ExportSkinFromNode(t);
+            }
+
+            afterSceneExportMarker.Begin();
+            if (_exportOptions.AfterSceneExport != null)
+                _exportOptions.AfterSceneExport(this, _root);
+
+            if (AfterSceneExport != null)
+                AfterSceneExport.Invoke(this, _root);
+            afterSceneExportMarker.End();
+
+            animationPointerResolver?.Resolve(this);
+
+            _buffer.Uri = sceneName + ".bin";
+            _buffer.ByteLength = CalculateAlignment((uint)_bufferWriter.BaseStream.Length, 4);
+
+            gltfSerializationMarker.Begin();
+            _root.Serialize(jsonWriter);
+            gltfSerializationMarker.End();
+
+            gltfWriteOutMarker.Begin();
+            _bufferWriter.Flush();
+            jsonWriter.Flush();
+			result[sceneName + ".bin"] = binStream;
+            result[sceneName + ".gltf"] = jsonStream;
+            for (int t = 0; t < _imageInfos.Count; ++t) {
+				var name = _imageInfos[t].outputPath;
+                var image = _imageInfos[t].texture;
+                MemoryStream imgStream = new MemoryStream();
+				imgStream.Write(image.EncodeToPNG());
+				result[name] = imgStream;
+            }
+            gltfWriteOutMarker.End();
+
+            exportGltfMarker.End();
+			return result;
+        }
 
 		/// <summary>
 		/// Specifies the path and filename for the GLTF Json and binary

@@ -32,7 +32,7 @@ namespace GLTF.Schema
 			ByteLength = buffer.ByteLength;
 		}
 
-		public static GLTFBuffer Deserialize(GLTFRoot root, JsonReader reader)
+		public static GLTFBuffer Deserialize(GLTFRoot root, JsonTextReader reader)
 		{
 			var buffer = new GLTFBuffer();
 

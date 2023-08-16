@@ -44,7 +44,7 @@ namespace GLTF.Schema
 			}
 		}
 
-		public static GLTFImage Deserialize(GLTFRoot root, JsonReader reader)
+		public static GLTFImage Deserialize(GLTFRoot root, JsonTextReader reader)
 		{
 			var image = new GLTFImage();
 

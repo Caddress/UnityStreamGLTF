@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace GLTF.Schema
 {
@@ -79,7 +80,7 @@ namespace GLTF.Schema
 			if (Uri != null)
 			{
 				writer.WritePropertyName("uri");
-				writer.WriteValue(Uri);
+				writer.WriteValue(System.Uri.UnescapeDataString(Uri));
 			}
 
 			if (MimeType != null)
